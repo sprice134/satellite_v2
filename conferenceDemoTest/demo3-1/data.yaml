@@ -1,0 +1,13 @@
+names:
+- object
+nc: 1
+roboflow:
+  license: CC BY 4.0
+  project: demo3-qbpqa
+  url: https://universe.roboflow.com/particleresearch/demo3-qbpqa/dataset/1
+  version: 1
+  workspace: particleresearch
+test: /Users/sprice/Documents/GitHub/PowderRecyling/yoloTest/demo.v4i.yolov8/test/images
+train: /Users/sprice/Documents/GitHub/PowderRecyling/yoloTest/demo.v4i.yolov8/train/images
+val: /Users/sprice/Documents/GitHub/PowderRecyling/yoloTest/demo.v4i.yolov8/valid/images
+
