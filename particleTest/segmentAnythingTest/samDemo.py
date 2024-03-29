@@ -129,7 +129,25 @@ def expand_bbox_within_border(x1, y1, x2, y2, img_width, img_height, expansion_r
     return (x1_expanded, y1_expanded, x2_expanded, y2_expanded)
 
 
-
+def fractal_dimension(Z, threshold=0.9):
+    # Only for 2d image, Z is binary image
+    assert(len(Z.shape) == 2)
+    def boxcount(Z, k):
+        S = np.add.reduceat(
+            np.add.reduceat(Z, np.arange(0, Z.shape[0], k), axis=0),
+                           np.arange(0, Z.shape[1], k), axis=1)
+        return len(np.where((S > 0) & (S < k*k))[0])
+    # Transform Z into a binary array
+    Z = (Z < threshold)
+    p = min(Z.shape)
+    n = 2**np.floor(np.log(p)/np.log(2))
+    n = int(np.log(n)/np.log(2))
+    sizes = 2**np.arange(n, 1, -1)
+    counts = []
+    for size in sizes:
+        counts.append(boxcount(Z, size))
+    coeffs = np.polyfit(np.log(sizes), np.log(counts), 1)
+    return -coeffs[0]
 
 
 if __name__ == '__main__':

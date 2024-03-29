@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt  # Import matplotlib for plotting
 from PIL import Image, ImageDraw  # For loading images
 import numpy as np
 from ultralytics import YOLO
-from samDemo import show_mask, show_points, show_box, mask_to_polygon, generate_random_points_within_polygon, point_to_polygon_distance, find_optimal_points, polygon_to_binary_mask, expand_bbox_within_border
+from samDemo import show_mask, show_points, show_box, mask_to_polygon, generate_random_points_within_polygon, point_to_polygon_distance, find_optimal_points, polygon_to_binary_mask, expand_bbox_within_border, fractal_dimension
 from segment_anything import sam_model_registry, SamPredictor
 import numpy as np
 import torch
@@ -10,12 +10,21 @@ import cv2
 from shapely.geometry import Polygon, Point
 from itertools import combinations
 import random
+from skimage.draw import polygon
+from skimage.measure import regionprops
+from skimage.morphology import convex_hull_image
+import math
 
 
 # Load the trained model (replace 'yolov8n-seg.pt' with your model's weight file)
 # model = YOLO('models/yolov8s_trained_weights.pt')  # Use the path to your trained weights
 model = YOLO('/home/sprice/satellite_v2/particleTest/modelOutputs/models_n/train/weights/best.pt') 
+
+# Copper
+# image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/Cu-Ni-Powder_250x_2_SE_V1_png.rf.eec5f31cbe6f51d8aa6a574a01f1883c.jpg'
+# Big Ones
 image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/S02_03_SE1_1000X24_png.rf.61ceee7fe0a4f4ccabd61c1e71524baf.jpg'
+# Demo Sample
 # image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/S05_02_SE1_300X59_png.rf.234bd1c35d0f3a635fd6164b651601f9.jpg'
 image = Image.open(image_path)
 
@@ -48,7 +57,7 @@ for i in results[0]:
         # image_with_polygon.convert('RGB').save(f'outputImages/yoloMask/{count}.png')
         # count += 1
 
-INDEX = 17
+INDEX = 15
 poly = listOfPolygons[INDEX]
 box = listOfBoxes[INDEX]
 box = box.cpu().numpy()
@@ -59,10 +68,11 @@ sampled_points = generate_random_points_within_polygon(concave_polygon, 50)
 optimal_points = find_optimal_points(sampled_points, concave_polygon, num_result_points=3, border_weight=2)
 optimal_points_xy = [[point.x, point.y] for point in optimal_points]
 op_x, op_y = zip(*optimal_points_xy)
-plt.figure(figsize=(10,10))
+image = cv2.imread(image_path)
+plt.figure(figsize=(10,8))
 plt.imshow(image)
-plt.axis('off')
 show_mask(mask, plt.gca())
+plt.axis('off')
 plt.savefig(f'outputImages/yoloPipeline/yoloMask.png')
 plt.plot(op_x, op_y, 'ro', markersize=5)
 plt.savefig(f'outputImages/yoloPipeline/yoloCentralPointTest.png')
@@ -90,11 +100,51 @@ masks, scores, logits = predictor.predict(
 for i, (mask, score) in enumerate(zip(masks, scores)):
     if i == 0:
         print('Points found')
-        plt.figure(figsize=(10,10))
+        plt.figure(figsize=(10,8))
         plt.imshow(image)
         show_mask(mask, plt.gca())
-        show_box(box, plt.gca())
+        # show_box(box, plt.gca())
         show_points(input_point, input_label, plt.gca())
         plt.title(f"Mask {i+1}, Score: {score:.3f}", fontsize=18)
         plt.axis('off')
         plt.savefig(f'outputImages/yoloPipeline/output_mask_{i+1}_centralPoints.png')
+
+
+
+
+        mask = mask_to_polygon(mask)
+        x_coords = [point[0] for point in mask[0]]
+        y_coords = [point[1] for point in mask[0]]
+
+        polygon_mask = np.zeros((int(max(y_coords)) + 1, int(max(x_coords)) + 1), dtype=np.uint8)
+        rr, cc = polygon(y_coords, x_coords)
+        polygon_mask[rr, cc] = 1
+        props = regionprops(polygon_mask)
+
+        for prop in props:
+            print("Area:", prop.area)
+            print("Perimeter:", prop.perimeter)
+            print("Eccentricity:", prop.eccentricity)
+            print('Roundness:', (4 * prop.area) / (np.pi * (prop.major_axis_length ** 2)))
+            print("Equivalent Diameter:", prop.equivalent_diameter)
+            print('Feret Diameter:', prop.feret_diameter_max)
+            print("Centroid Location:", prop.centroid)
+            print("Major Axis:", prop.axis_major_length)
+            print("Minor Axis:", prop.axis_minor_length)
+            print('Elongation:', prop.minor_axis_length / prop.major_axis_length)
+            print('Crofton Perimeter:', prop.perimeter_crofton)
+            print('Solidity:', prop.solidity)
+            print('Convex Area:',prop.area_convex)
+            print('Extent:', prop.extent)
+            # print('Convexity:', prop.perimeter / np.sum(np.sqrt(convex_hull_image(prop.coords))))
+            print('Aspect Ratio:', prop.major_axis_length / prop.minor_axis_length)
+            print('Fractal Dimension:', fractal_dimension(prop.image))
+            print('Form Factor:', 4 * math.pi * prop.area / (prop.perimeter ** 2))
+            print('Rectangularity:', prop.area / prop.area_bbox)
+            print('Compactness:', (prop.perimeter ** 2) / (4 * math.pi * prop.area))
+            print('Shape Factor:', math.sqrt(prop.area) / prop.perimeter)
+            print("Convex Area Ratio:", prop.area / prop.convex_area)
+            x_center, y_center = (prop.bbox[0] + prop.bbox[2]) / 2.0, (prop.bbox[1] + prop.bbox[3]) / 2.0
+            centroidToCenter = math.sqrt((prop.centroid[0] - x_center) ** 2 + (prop.centroid[1] - y_center) ** 2)
+            print("Centroid To Center:", centroidToCenter)
+            print('-'*30)
