@@ -1,4 +1,5 @@
 /yolo
 /yoloVenv
 *.pt
+*.pth
 /models
