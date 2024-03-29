@@ -1,2 +1,4 @@
 /yolo
-/conferenceDemoTest/yolov8n-seg.pt
+/yoloVenv
+*.pt
+/models

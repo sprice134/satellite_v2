@@ -8,7 +8,7 @@ roboflow:
   version: 1
   workspace: particleresearch
   
-test: /Users/sprice/Documents/GitHub/satellite_v2/conferenceDemoTest/demo3-1/test/images
-train: /Users/sprice/Documents/GitHub/satellite_v2/conferenceDemoTest/demo3-1/train/images
-val: /Users/sprice/Documents/GitHub/satellite_v2/conferenceDemoTest/demo3-1/valid/images
+test: /home/sprice/satellite_v2/conferenceDemoTest/demo3-1/test/images
+train: /home/sprice/satellite_v2/conferenceDemoTest/demo3-1/train/images
+val: /home/sprice/satellite_v2/conferenceDemoTest/demo3-1/valid/images
 
