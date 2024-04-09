@@ -22,6 +22,7 @@ for i in results[0]:
     # Extract the polygon points; convert them to the expected format
     # Each item in 'polygon_points' is expected to be a NumPy array of shape [n, 2]
     polygon_points = i.masks.xy[0]  # This is the array of points
+    print(polygon_points)
     if len(polygon_points) != 0:
         # Convert the array of points to a flat list of coordinates
         flat_polygon_points = [coord for pair in polygon_points for coord in pair]

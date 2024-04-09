@@ -206,3 +206,4 @@ if __name__ == '__main__':
             plt.title(f"Mask {i+1}, Score: {score:.3f}", fontsize=18)
             plt.axis('off')
             plt.savefig(f'outputImages/output_mask_{i+1}_centralPoints.png')
+            plt.close()
