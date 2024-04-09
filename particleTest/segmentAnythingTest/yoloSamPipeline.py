@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt  # Import matplotlib for plotting
 from PIL import Image, ImageDraw  # For loading images
 import numpy as np
 from ultralytics import YOLO
-from samDemo import show_mask, show_points, show_box, mask_to_polygon, generate_random_points_within_polygon, point_to_polygon_distance, find_optimal_points, polygon_to_binary_mask, expand_bbox_within_border, fractal_dimension
+from samDemo import show_mask, show_points, show_box, mask_to_polygon, generate_random_points_within_polygon, point_to_polygon_distance, find_optimal_points, polygon_to_binary_mask, expand_bbox_within_border, fractal_dimension, apply_mask_to_image
 from segment_anything import sam_model_registry, SamPredictor
 import numpy as np
 import torch
@@ -158,53 +158,23 @@ for INDEX in range(len(listOfPolygons)):
             #     print('-'*30)
 
 
-image2 = Image.open(image_path).convert('RGBA')
-samSegs = 0
-for polygon_points in polygons:
-    if len(polygon_points) != 0:
-        flat_polygon_points = [coord for pair in polygon_points for coord in pair]
-        mask_img = Image.new('L', image2.size, 0)
-        mask_draw = ImageDraw.Draw(mask_img)
-        mask_draw.polygon(flat_polygon_points, outline=1, fill=255)  # Fill with white
-        mask_rgba = Image.new('RGBA', mask_img.size)
-        red_mask = Image.new('RGBA', mask_img.size, (255, 0, 0, 128)) 
-        mask_rgba.paste(red_mask, (0, 0), mask_img)
-        image2 = Image.alpha_composite(image2, mask_rgba)
-        samSegs += 1
-
-
-final_image = image2.convert('RGB')
-final_image.save('outputImages/yoloPipeline/everyMask/samMask.png')
-
-samSegs = 0
-for binary_mask in masksList:
-    if binary_mask is not None:
-        # Convert binary mask to PIL Image
-        mask_img = Image.fromarray((binary_mask * 255).astype('uint8'), 'L')
-
-        # Create a red mask with the same size as the binary mask
-        red_mask = Image.new('L', mask_img.size, 255)  # 'L' mode for grayscale, with intensity 255
-
-        # Convert the red mask to RGBA mode to match the binary mask
-        red_mask_rgba = red_mask.convert('RGBA')
-
-        # Print out the size of the image and the mask
-        print("Image size:", image2.size)
-        print("Mask size:", mask_img.size)
-
-        # Paste the binary mask onto the red mask
-        mask_rgba = Image.alpha_composite(red_mask_rgba, mask_img)
-
-        # Composite the mask onto the original image
-        image2 = Image.alpha_composite(image2, mask_rgba)
-
-        samSegs += 1
 
 
 
-# Convert the final image to RGB and save
-final_image = image2.convert('RGB')
-final_image.save('outputImages/yoloPipeline/everyMask/samMaskMask.png')
+
+composite_mask = np.zeros_like(masksList[0])
+# Perform a logical OR operation over all masks
+for mask in masksList:
+    composite_mask = np.logical_or(composite_mask, mask)
+
+# Convert the boolean array to an integer array (optional, for image saving)
+composite_mask_for_image = composite_mask.astype(np.uint8) * 255
+composite_image = Image.fromarray(composite_mask_for_image)
+composite_image.save("outputImages/yoloPipeline/everyMask/samMask.png")
+color_with_alpha = np.array([255, 0, 0, 0.5])#Transparent Red
+result_image = apply_mask_to_image(image_path, composite_mask, color_with_alpha)
+result_image.save("outputImages/yoloPipeline/everyMask/samImage.png")
+
 
 
 
@@ -224,6 +194,4 @@ for i in results[0]:
         image2 = Image.alpha_composite(image2, mask_rgba)
         yoloSegs += 1
 final_image = image2.convert('RGB')
-final_image.save('outputImages/yoloPipeline/everyMask/yoloMask.png')
-
-print(samSegs, yoloSegs)
+final_image.save('outputImages/yoloPipeline/everyMask/yoloImage.png')

@@ -6,7 +6,7 @@ import cv2
 from shapely.geometry import Polygon, Point
 from itertools import combinations
 import random
-
+from PIL import Image, ImageDraw
 
 def show_mask(mask, ax, random_color=False):
     if random_color:
@@ -148,6 +148,31 @@ def fractal_dimension(Z, threshold=0.9):
         counts.append(boxcount(Z, size))
     coeffs = np.polyfit(np.log(sizes), np.log(counts), 1)
     return -coeffs[0]
+
+def apply_mask_to_image(image_path, mask, color_with_alpha):
+    # Load the image
+    image = Image.open(image_path).convert("RGBA")
+    original = np.array(image)
+    
+    # Create a colored mask
+    colored_mask = np.zeros((*mask.shape, 4))  # Prepare a 4-channel (RGBA) image
+    colored_mask[mask == 1] = color_with_alpha  # Apply color and alpha to the mask area
+    
+    # Blend the original image and the colored mask
+    # First, normalize alpha values from [0, 1] to [0, 255] for blending
+    alpha = colored_mask[..., 3] * 255
+    foreground = colored_mask[..., :3] * alpha[..., None]
+    background = original[..., :3] * (255 - alpha[..., None])
+    
+    # Combine foreground and background, then divide by alpha to respect transparency
+    combined_rgb = (foreground + background) / 255
+    combined_alpha = alpha + (255 - alpha) * (original[..., 3] / 255)
+    combined = np.dstack((combined_rgb, combined_alpha))  # Stack them together into a single image
+    
+    # Convert back to an Image object
+    result_image = Image.fromarray(np.uint8(combined))
+    
+    return result_image
 
 
 if __name__ == '__main__':
