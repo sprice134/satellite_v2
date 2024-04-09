@@ -23,9 +23,11 @@ model = YOLO('/home/sprice/satellite_v2/particleTest/modelOutputs/models_n/train
 # Copper
 # image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/Cu-Ni-Powder_250x_2_SE_V1_png.rf.eec5f31cbe6f51d8aa6a574a01f1883c.jpg'
 # Big Ones
-image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/S02_03_SE1_1000X24_png.rf.61ceee7fe0a4f4ccabd61c1e71524baf.jpg'
+# image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/S02_03_SE1_1000X24_png.rf.61ceee7fe0a4f4ccabd61c1e71524baf.jpg'
 # Demo Sample
 # image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/S05_02_SE1_300X59_png.rf.234bd1c35d0f3a635fd6164b651601f9.jpg'
+# Real Big
+image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/RHA_00-45_500X07_png.rf.2e24ff0e093484de86e43a21ef7e62cb.jpg'
 image = Image.open(image_path)
 
 
