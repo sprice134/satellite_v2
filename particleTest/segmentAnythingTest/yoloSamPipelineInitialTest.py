@@ -27,7 +27,9 @@ model = YOLO('/home/sprice/satellite_v2/particleTest/modelOutputs/models_n/train
 # Demo Sample
 # image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/S05_02_SE1_300X59_png.rf.234bd1c35d0f3a635fd6164b651601f9.jpg'
 # Real Big
-image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/RHA_00-45_500X07_png.rf.2e24ff0e093484de86e43a21ef7e62cb.jpg'
+# image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/RHA_00-45_500X07_png.rf.2e24ff0e093484de86e43a21ef7e62cb.jpg'
+# Agglomerations
+image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/valid/images/RHA_00-45_500X11_png.rf.a1d468233106b607347416e301a98df1.jpg'
 image = Image.open(image_path)
 
 
@@ -128,8 +130,6 @@ for INDEX in range(len(listOfPolygons)):
             props = regionprops(polygon_mask)
             polygons.append([[x, y] for x, y in zip(x_coords, y_coords)])
 
-            if INDEX == 10 or INDEX == 11:
-                print([[x, y] for x, y in zip(x_coords, y_coords)])
 
             # for prop in props:
             #     print("Area:", prop.area)
