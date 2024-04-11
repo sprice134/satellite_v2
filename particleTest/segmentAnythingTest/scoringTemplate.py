@@ -21,6 +21,7 @@ from pycocotools.cocoeval import COCOeval
 import cv2
 from pycocotools import mask as maskUtils
 import skimage.draw
+import supervision as sv
 
 def create_coco_annotations_from_polygons(polygons, image_width, image_height, image_filename):
     """Creates COCO annotations for a list of polygons."""
@@ -278,13 +279,12 @@ model = YOLO('/home/sprice/satellite_v2/particleTest/modelOutputs/models_n/train
 image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/valid/images/RHA_00-45_500X11_png.rf.a1d468233106b607347416e301a98df1.jpg'
 image = Image.open(image_path)
 
-
-# sam_checkpoint = "model/sam_vit_l_0b3195.pth"
-# model_type = "vit_l"
-# device = "cuda"
-# sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
-# sam.to(device=device)
-# predictor = SamPredictor(sam)
+sam_checkpoint = "model/sam_vit_l_0b3195.pth"
+model_type = "vit_l"
+device = "cuda"
+sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
+sam.to(device=device)
+predictor = SamPredictor(sam)
 
 
 listOfPolygons = []
@@ -310,7 +310,47 @@ with open('coco_pred.json', 'w') as f:
 
 
 
-# ground_truth_file = 'coco_ground_truth.json'
-# pred_file = 'coco_pred.json'
-# mAP = calculate_mAP(ground_truth_file, pred_file)
-# print("Mean Average Precision (mAP):", mAP)
+samPolygons = []
+for INDEX in range(len(listOfPolygons)):
+    poly = listOfPolygons[INDEX]
+    box = listOfBoxes[INDEX]
+    box = box.cpu().numpy()
+    # print(image)
+    box = np.array(expand_bbox_within_border(box[0], box[1], box[2], box[3], image.width, image.height, expansion_rate = 0.1))
+    mask = polygon_to_binary_mask(poly, image.height, image.width)
+    concave_polygon = Polygon(poly)
+    sampled_points = generate_random_points_within_polygon(concave_polygon, 50)
+    optimal_points = find_optimal_points(sampled_points, concave_polygon, num_result_points=3, border_weight=2)
+    optimal_points_xy = [[point.x, point.y] for point in optimal_points]
+    op_x, op_y = zip(*optimal_points_xy)
+    loop_image = cv2.imread(image_path)
+    plt.figure(figsize=(10,8))
+    plt.imshow(loop_image)
+    show_mask(mask, plt.gca())
+    plt.axis('off')
+    plt.savefig(f'outputImages/yoloPipeline/everyMask/{INDEX}_yoloMask.png')
+    plt.plot(op_x, op_y, 'ro', markersize=5)
+    plt.savefig(f'outputImages/yoloPipeline/everyMask/{INDEX}_yoloCentralPointTest.png')
+    plt.close()
+
+
+    predictor.set_image(loop_image)
+    input_point = np.array(optimal_points_xy)
+    input_label = np.array([1, 1, 1])
+
+    # input_point = np.array([[600, 500], [500, 400], [600, 400]])
+    # input_label = np.array([1, 1, 1])
+
+    masks, scores, logits = predictor.predict(
+        point_coords=input_point,
+        point_labels=input_label,
+        box=box[None, :],
+        multimask_output=True,
+    )
+
+    for i, (mask, score) in enumerate(zip(masks, scores)):
+        if i == 0:
+            samPolygons.append(sv.mask_to_polygons(mask))
+
+
+save_list_of_lists_to_file(samPolygons, 'RHA_00-45_500X11.txt')
