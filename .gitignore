@@ -3,3 +3,4 @@
 *.pt
 *.pth
 /models
+/aim2024/modelPerformance
