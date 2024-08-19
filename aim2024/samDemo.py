@@ -12,9 +12,25 @@ def show_mask(mask, ax, random_color=False):
     if random_color:
         color = np.concatenate([np.random.random(3), np.array([0.6])], axis=0)
     else:
-        color = np.array([30/255, 144/255, 255/255, 0.6])
+        color = np.array([255, 0, 0, 0.5])
+        # color = np.array([0, 0, 255, 0.5])
+
+    # Ensure mask is within [0, 1]
+    mask = np.clip(mask, 0, 1)
+
     h, w = mask.shape[-2:]
-    mask_image = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
+
+    # Separate RGB and alpha channels
+    rgb_color = color[:3]
+    alpha_channel = color[3]
+
+    # Apply the mask to the RGB color
+    mask_image_rgb = mask.reshape(h, w, 1) * rgb_color.reshape(1, 1, -1)
+    mask_image_rgb = np.clip(mask_image_rgb, 0, 1)
+    alpha_mask = mask.reshape(h, w) * alpha_channel
+    mask_image = np.dstack((mask_image_rgb, alpha_mask))
+    mask_image = np.clip(mask_image, 0, 1)
+
     ax.imshow(mask_image)
     
 def show_points(coords, labels, ax, marker_size=200):

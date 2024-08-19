@@ -7,14 +7,14 @@ from segment_anything import sam_model_registry, SamPredictor
 import numpy as np
 import torch
 import cv2
-from shapely.geometry import Polygon, Point
-from itertools import combinations
-import random
+from shapely.geometry import Polygon
 from skimage.draw import polygon
 from skimage.measure import regionprops
-from skimage.morphology import convex_hull_image
-import math
 import os
+from shapely.geometry import Polygon
+from skimage.measure import regionprops
+from sklearn.metrics import r2_score
+
 
 
 def get_jpg_files(directory):
@@ -79,6 +79,34 @@ def convert_to_binary_mask(mask):
     return binary_mask
 
 
+def binary_mask_to_regionprops_dict(binary_mask):
+    
+    # Calculate region properties
+    props = regionprops(binary_mask)
+    
+    # List of selected properties
+    selected_props = [
+        'area', 'area_convex', 'major_axis_length', 'minor_axis_length', 'eccentricity',
+        'equivalent_diameter', 'euler_number', 'extent', 'feret_diameter_max', 'perimeter', 'solidity'
+    ]
+    
+    # Convert the selected properties to a dictionary
+    props_dicts = []
+    for region in props:
+        region_dict = {}
+        for prop in selected_props:
+            try:
+                region_dict[prop] = getattr(region, prop)
+            except AttributeError:
+                region_dict[prop] = None
+        props_dicts.append(region_dict)
+    
+    return props_dicts
+
+
+
+
+
 def mean_iou(gt_masks, pred_masks):
     """
     Calculate the mean Intersection over Union (IoU) between ground truth and predicted masks.
@@ -119,6 +147,7 @@ def mean_iou(gt_masks, pred_masks):
     # Calculate mean IoU across all predicted masks
     mean_iou_value = np.mean(iou_scores)
     return mean_iou_value
+
 
 
 def mean_iou_precision_recall(gt_masks, pred_masks, sam=False):
@@ -183,6 +212,108 @@ def mean_iou_precision_recall(gt_masks, pred_masks, sam=False):
     mean_recall_value = np.mean(recall_scores)
     
     return mean_iou_value, mean_precision_value, mean_recall_value
+
+
+def calculate_morphologicalMetricSummary(gt_list, pred_list):
+    if len(gt_list) != len(pred_list):
+        raise ValueError("The ground truth list and prediction list must have the same number of instances.")
+    
+    # Initialize dictionaries to store squared errors, ground truth, and predictions
+    squared_errors = {key: [] for key in gt_list[0].keys()}
+    gt_values = {key: [] for key in gt_list[0].keys()}
+    pred_values = {key: [] for key in gt_list[0].keys()}
+    
+    # Iterate through each instance in the lists
+    for gt, pred in zip(gt_list, pred_list):
+        for key in gt.keys():
+            squared_error = (gt[key] - pred[key]) ** 2
+            squared_errors[key].append(squared_error)
+            gt_values[key].append(gt[key])
+            pred_values[key].append(pred[key])
+    
+
+    # Calculate RMSE, mean of predictions, mean of ground truth, and R² for each metric
+    results = {}
+    for key in squared_errors.keys():
+        mean_squared_error = np.mean(squared_errors[key])
+        rmse = np.sqrt(mean_squared_error)
+        
+        mean_pred = np.mean(pred_values[key])
+        mean_gt = np.mean(gt_values[key])
+        
+        r2 = r2_score(gt_values[key], pred_values[key])
+        
+        results[key] = {
+            'RMSE': rmse, 
+            'Mean of Predictions': mean_pred, 
+            'Mean of Ground Truth': mean_gt, 
+            'R2': r2
+        }
+
+    return results
+
+
+
+def get_mean_regionprops(gt_masks, pred_masks, sam=False):
+    """
+    Calculate the mean Intersection over Union (IoU), mean precision, and mean recall between ground truth and predicted masks.
+
+    Args:
+    gt_masks (list of np.array): List of ground truth binary masks.
+    pred_masks (list of np.array): List of predicted binary masks.
+
+    Returns:
+    tuple: Mean IoU score, mean precision, mean recall.
+    """
+    iou_scores = []
+    pred_metrics = []
+    gt_metrics = []
+    for pred_mask in pred_masks:
+        temp_iou_scores = []
+        temp_pred_metrics = []
+        temp_gt_metrics = []
+        if sam == False:
+            pred_mask = convert_to_binary_mask(pred_mask)
+        
+        for gt_mask in gt_masks:
+            # Ensure the masks are the same size
+            if pred_mask.shape != gt_mask.shape:
+                raise ValueError("Mismatched dimensions between ground truth and predicted masks.")
+
+            # Calculate intersection and union
+            intersection = np.logical_and(gt_mask, pred_mask).sum()
+            union = np.logical_or(gt_mask, pred_mask).sum()
+            
+
+            # Calculate IoU and handle case where division by zero might occur
+            if union != 0 and intersection != 0:
+                temp_iou_scores.append(intersection / union)
+                temp_pred_metrics.append(binary_mask_to_regionprops_dict(pred_mask))
+                temp_gt_metrics.append(binary_mask_to_regionprops_dict(gt_mask))
+
+                
+
+
+        # If no valid IoU scores, append 0
+        if len(temp_iou_scores) == 0:
+            iou_scores.append(0)
+            pred_metrics.append({})
+            gt_metrics.append({})
+        
+
+        #Change this to calculate the index with the highest IOU score
+        #and then return the IOU, precision, and recall at that index
+        else:
+            bestIOU = max(temp_iou_scores)
+            index = temp_iou_scores.index(bestIOU)
+            
+            iou_scores.append(temp_iou_scores[index])
+            pred_metrics.append(temp_pred_metrics[index][0])
+            gt_metrics.append(temp_gt_metrics[index][0])
+
+    # Calculate mean IoU, mean precision, and mean recall across all predicted masks
+    
+    return calculate_morphologicalMetricSummary(gt_metrics, pred_metrics)
 
 
 def create_composite_mask(masks):
@@ -321,7 +452,7 @@ def replace_true_with_one(arrays):
 
 
 print('Testing All')
-model = YOLO('/home/sprice/satellite_v2/aim2024/modelPerformance/models_s/train/weights/best.pt') 
+model = YOLO('/home/sprice/satellite_v2/aim2024/modelPerformance/models_n/train/weights/best.pt') 
 
 sam_checkpoint = "/home/sprice/satellite_v2/particleTest/segmentAnythingTest/model/sam_vit_l_0b3195.pth"
 model_type = "vit_l"
@@ -338,17 +469,40 @@ iou, prec, rec = [], [], []
 for image_path in jpg_files:
     print(f'scoreComparisonMasks/{image_path.split("/")[-1].split("_png")[0]}_gt.png')
     gt_masks = get_ground_truth(image_path)
-    # pred_masks = get_prediction_masks(image_path, model)
-    # scores = mean_iou_precision_recall(gt_masks, pred_masks)
+    
+    '''YOLO'''
+    # pred_masks = get_prediction_masks(image_path, model)    
+    # metrics = get_mean_regionprops(gt_masks, pred_masks)
+    # with open('rmse_outputs/yolo_nano_rmse.txt', 'a') as file:
+    #     # file.write(f'{image_path.split("/")[-1].split("_png")[0]}_dualSight: {scores[0]}, {scores[1]}, {scores[2]}' + '\n')
+    #     file.write(f'{image_path.split("/")[-1].split("_png")[0]}: {metrics}' + '\n')
+    '''
+    pred_masks = get_prediction_masks(image_path, model)
+    scores = mean_iou_precision_recall(gt_masks, pred_masks)
 
     # composite_mask = create_composite_mask(pred_masks)
     # plt.imshow(composite_mask, cmap='gray')
     # plt.title('Binary Mask from YOLOv8 Label')
     # plt.axis('off')
     # plt.savefig(f'scoreComparisonMasks/{image_path.split("/")[-1].split("_png")[0]}_yolo.png')
-
+    print(scores)
+    iou.append(scores[0])
+    prec.append(scores[1])
+    rec.append(scores[2])
+    with open('yolo_xLarge.txt', 'a') as file:
+        # file.write(f'{image_path.split("/")[-1].split("_png")[0]}_dualSight: {scores[0]}, {scores[1]}, {scores[2]}' + '\n')
+        file.write(f'{image_path.split("/")[-1].split("_png")[0]}: {scores[0]}, {scores[1]}, {scores[2]}' + '\n')
+    '''
+    '''DUalSIght'''
+    
     pred_masks = get_dualSight_masks(image_path, model, predictor)
-    scores = mean_iou_precision_recall(gt_masks, pred_masks, sam=True)
+    metrics = get_mean_regionprops(gt_masks, pred_masks, sam=True)
+    with open('rmse_outputs/dualSight_rmse.txt', 'a') as file:
+        # file.write(f'{image_path.split("/")[-1].split("_png")[0]}_dualSight: {scores[0]}, {scores[1]}, {scores[2]}' + '\n')
+        file.write(f'{image_path.split("/")[-1].split("_png")[0]}: {metrics}' + '\n')
+    '''
+    # pred_masks = get_dualSight_masks(image_path, model, predictor)
+    # scores = mean_iou_precision_recall(gt_masks, pred_masks, sam=True)
 
     # composite_mask = create_composite_mask(gt_masks)
     # plt.imshow(composite_mask, cmap='gray')
@@ -362,14 +516,18 @@ for image_path in jpg_files:
     # plt.axis('off')
     # plt.savefig(f'scoreComparisonMasks/{image_path.split("/")[-1].split("_png")[0]}_dualSight.png')
     
-    print(scores)
-    iou.append(scores[0])
-    prec.append(scores[1])
-    rec.append(scores[2])
-    with open('dualSight.txt', 'a') as file:
-        # file.write(f'{image_path.split("/")[-1].split("_png")[0]}_dualSight: {scores[0]}, {scores[1]}, {scores[2]}' + '\n')
-        file.write(f'{image_path.split("/")[-1].split("_png")[0]}: {scores[0]}, {scores[1]}, {scores[2]}' + '\n')
+    # print(scores)
+    # iou.append(scores[0])
+    # prec.append(scores[1])
+    # rec.append(scores[2])
+    # with open('dualSight_xLarge.txt', 'a') as file:
+    #     # file.write(f'{image_path.split("/")[-1].split("_png")[0]}_dualSight: {scores[0]}, {scores[1]}, {scores[2]}' + '\n')
+    #     file.write(f'{image_path.split("/")[-1].split("_png")[0]}: {scores[0]}, {scores[1]}, {scores[2]}' + '\n')
+    '''
+# print(np.mean(iou), np.mean(prec), np.mean(rec))
+# with open('yolo_xLarge.txt', 'a') as file:
+#     file.write(f'Final scores: {np.mean(iou)}, {np.mean(prec)}, {np.mean(rec)}' + '\n')
 
-print(np.mean(iou), np.mean(prec), np.mean(rec))
-with open('dualSight.txt', 'a') as file:
-    file.write(f'Final scores: {np.mean(iou)}, {np.mean(prec)}, {np.mean(rec)}' + '\n')
+# print(np.mean(iou), np.mean(prec), np.mean(rec))
+# with open('dualSight_xLarge.txt', 'a') as file:
+#     file.write(f'Final scores: {np.mean(iou)}, {np.mean(prec)}, {np.mean(rec)}' + '\n')

@@ -1,0 +1,58 @@
+Mon Aug 19 07:05:26 2024       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 550.54.15              Driver Version: 550.54.15      CUDA Version: 12.4     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 80GB HBM3          On  |   00000000:E4:00.0 Off |                    0 |
+| N/A   33C    P0            117W /  700W |    4402MiB /  81559MiB |      0%   E. Process |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
++-----------------------------------------------------------------------------------------+
+True
+Testing All
+JPG Files in the directory:
+scoreComparisonMasks/Cu-Ni-Powder_250x_10_SE_gt.png
+1024 768
+Traceback (most recent call last):
+  File "/home/sprice/satellite_v2/aim2024/performanceCalculationsJoined.py", line 488, in <module>
+    pred_masks = get_dualSight_masks(image_path, model, predictor)
+  File "/home/sprice/satellite_v2/aim2024/performanceCalculationsJoined.py", line 353, in get_dualSight_masks
+    results = yoloModel(image)
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/ultralytics/engine/model.py", line 176, in __call__
+    return self.predict(source, stream, **kwargs)
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/ultralytics/engine/model.py", line 444, in predict
+    self.predictor.setup_model(model=self.model, verbose=is_cli)
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/ultralytics/engine/predictor.py", line 297, in setup_model
+    self.model = AutoBackend(
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/ultralytics/nn/autobackend.py", line 142, in __init__
+    model = weights.to(device)
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1152, in to
+    return self._apply(convert)
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/ultralytics/nn/tasks.py", line 232, in _apply
+    self = super()._apply(fn)
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/torch/nn/modules/module.py", line 802, in _apply
+    module._apply(fn)
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/torch/nn/modules/module.py", line 802, in _apply
+    module._apply(fn)
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/torch/nn/modules/module.py", line 802, in _apply
+    module._apply(fn)
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/torch/nn/modules/module.py", line 825, in _apply
+    param_applied = fn(param)
+  File "/home/sprice/satellite_v2/samEnv/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1150, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+RuntimeError: CUDA error: CUDA-capable device(s) is/are busy or unavailable
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

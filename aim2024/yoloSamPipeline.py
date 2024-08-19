@@ -25,9 +25,9 @@ say, 90% of one particle is contained within another one, delete the small one''
 model = YOLO('/home/sprice/satellite_v2/aim2024/modelPerformance/models_s/train/weights/best.pt') 
 
 # Copper
-image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/Cu-Ni-Powder_250x_2_SE_V1_png.rf.eec5f31cbe6f51d8aa6a574a01f1883c.jpg'
+# image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/Cu-Ni-Powder_250x_2_SE_V1_png.rf.eec5f31cbe6f51d8aa6a574a01f1883c.jpg'
 # Big Ones
-# image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/S02_03_SE1_1000X24_png.rf.61ceee7fe0a4f4ccabd61c1e71524baf.jpg'
+image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/S02_03_SE1_1000X24_png.rf.61ceee7fe0a4f4ccabd61c1e71524baf.jpg'
 # Demo Sample
 # image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/S05_02_SE1_300X59_png.rf.234bd1c35d0f3a635fd6164b651601f9.jpg'
 # Real Big
@@ -36,7 +36,11 @@ image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images
 # image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/valid/images/RHA_00-45_500X11_png.rf.a1d468233106b607347416e301a98df1.jpg'
 # Full test
 # image_path = '/home/sprice/satellite_v2/aim2024/demo.v7i.yolov8/train/images/RHA_00-45_500X05_png.rf.559a7282fdc9edcc3c5ea9142294f4f9.jpg'
-image_path = '/home/sprice/satellite_v2/aim2024/demo.v7i.yolov8/test/images/OMG_Cu_1250_07_png.rf.ff417e92b36bba2bb91175ce144ff6ab.jpg'
+# image_path = '/home/sprice/satellite_v2/aim2024/demo.v7i.yolov8/test/images/OMG_Cu_1250_07_png.rf.ff417e92b36bba2bb91175ce144ff6ab.jpg'
+# image_path = '/home/sprice/satellite_v2/particleTest/demo.v5i.yolov8/test/images/Rec-Cu-Ni-Powder_250x_10_SE_png.rf.2e0d707cd1875e646bed373fcca80ec2.jpg'
+
+
+# image_path = '/home/sprice/satellite_v2/aim2024/demo.v7i.yolov8/test/images/S05_03_SE1_1000X65_png.rf.b1b275b60d329ab4fae1100a32dcfd4e.jpg'
 image = Image.open(image_path)
 
 
@@ -86,7 +90,7 @@ for INDEX in range(len(listOfPolygons)):
     loop_image = cv2.imread(image_path)
     plt.figure(figsize=(10,8))
     plt.imshow(loop_image)
-    show_mask(mask, plt.gca())
+    # show_mask(mask, plt.gca())
     plt.axis('off')
     plt.savefig(f'outputImages/yoloPipeline/everyMask/{INDEX}_yoloMask.png')
     plt.plot(op_x, op_y, 'ro', markersize=5)
@@ -119,7 +123,7 @@ for INDEX in range(len(listOfPolygons)):
             plt.imshow(image)
             show_mask(mask, plt.gca())
             # show_box(box, plt.gca())
-            show_points(input_point, input_label, plt.gca())
+            # show_points(input_point, input_label, plt.gca())
             plt.title(f"Mask {i+1}, Score: {score:.3f}", fontsize=18)
             plt.axis('off')
             plt.savefig(f'outputImages/yoloPipeline/everyMask/{INDEX}_output_mask_{i+1}_centralPoints.png')
@@ -198,7 +202,7 @@ for i in results[0]:
         mask_draw = ImageDraw.Draw(mask_img)
         mask_draw.polygon(flat_polygon_points, outline=1, fill=255)
         mask_rgba = Image.new('RGBA', mask_img.size)
-        red_mask = Image.new('RGBA', mask_img.size, (255, 0, 0, 128))
+        red_mask = Image.new('RGBA', mask_img.size, (0, 0, 255, 128))
         mask_rgba.paste(red_mask, (0, 0), mask_img)
         image2 = Image.alpha_composite(image2, mask_rgba)
         yoloSegs += 1
